@@ -80,7 +80,7 @@ def test_user_only_lists_own_categories(api_client, user, other_user):
     response = api_client.get(reverse("category-list"))
 
     assert response.status_code == 200
-    assert response.json() == [
+    assert response.json()["results"] == [
         {
             "id": own_category.id,
             "name": "Work",

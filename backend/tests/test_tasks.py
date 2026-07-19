@@ -55,7 +55,7 @@ def test_user_only_lists_owned_or_shared_tasks(api_client, user, other_user):
     response = api_client.get(reverse("task-list"))
 
     assert response.status_code == 200
-    assert {task["id"] for task in response.json()} == {owned.id, shared.id}
+    assert {task["id"] for task in response.json()["results"]} == {owned.id, shared.id}
 
 
 @pytest.mark.django_db

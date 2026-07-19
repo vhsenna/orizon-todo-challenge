@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
+from .filters import TaskFilter
 from .models import Category, Task
 from .permissions import IsCategoryOwner, IsTaskOwnerForDelete
 from .serializers import CategorySerializer, TaskSerializer
@@ -23,6 +24,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsTaskOwnerForDelete]
+    filterset_class = TaskFilter
+    search_fields = ("title", "description")
+    ordering_fields = ("due_date", "created_at", "priority")
+    ordering = ("-created_at",)
 
     def get_queryset(self):
         user = self.request.user
