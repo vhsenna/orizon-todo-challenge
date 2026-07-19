@@ -1,6 +1,9 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Category, Task
+
+User = get_user_model()
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -65,3 +68,25 @@ class TaskSerializer(serializers.ModelSerializer):
         if category is not None and category.owner_id != request.user.id:
             raise serializers.ValidationError("Category must belong to the task owner.")
         return category
+
+
+class TaskShareSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        email = value.lower()
+        task = self.context["task"]
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError("No user exists with this email.") from exc
+
+        if user.id == task.owner_id:
+            raise serializers.ValidationError("Task owner already has access.")
+
+        if task.shared_with.filter(id=user.id).exists():
+            raise serializers.ValidationError("Task is already shared with this user.")
+
+        self.context["shared_user"] = user
+        return email

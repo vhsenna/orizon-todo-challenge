@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from .filters import TaskFilter
 from .models import Category, Task
 from .permissions import IsCategoryOwner, IsTaskOwnerForDelete
-from .serializers import CategorySerializer, TaskSerializer
+from .serializers import CategorySerializer, TaskSerializer, TaskShareSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -50,4 +50,21 @@ class TaskViewSet(viewsets.ModelViewSet):
             else Task.Status.COMPLETED
         )
         task.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(task).data)
+
+    @action(detail=True, methods=["post"])
+    def share(self, request, pk=None):
+        task = self.get_object()
+        if task.owner_id != request.user.id:
+            return Response(
+                {"detail": "Only the task owner can share this task."},
+                status=403,
+            )
+
+        serializer = TaskShareSerializer(
+            data=request.data,
+            context={"request": request, "task": task},
+        )
+        serializer.is_valid(raise_exception=True)
+        task.shared_with.add(serializer.context["shared_user"])
         return Response(self.get_serializer(task).data)
