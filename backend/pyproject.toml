@@ -1,0 +1,29 @@
+[project]
+name = "orizon-todo-backend"
+version = "0.1.0"
+description = "Django REST API for the Orizon Todo Challenge"
+readme = "../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<6.0",
+    "django-cors-headers>=4.4,<5.0",
+    "djangorestframework>=3.15,<4.0",
+    "djangorestframework-simplejwt>=5.3,<6.0",
+    "drf-spectacular>=0.27,<1.0",
+    "psycopg[binary]>=3.2,<4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<9.0",
+    "pytest-django>=4.9,<5.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.development"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
