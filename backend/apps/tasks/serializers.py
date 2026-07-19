@@ -82,10 +82,10 @@ class TaskShareSerializer(serializers.Serializer):
         except User.DoesNotExist as exc:
             raise serializers.ValidationError("No user exists with this email.") from exc
 
-        if user.id == task.owner_id:
+        if user.pk == task.owner_id:
             raise serializers.ValidationError("Task owner already has access.")
 
-        if task.shared_with.filter(id=user.id).exists():
+        if task.shared_with.filter(pk=user.pk).exists():
             raise serializers.ValidationError("Task is already shared with this user.")
 
         self.context["shared_user"] = user
