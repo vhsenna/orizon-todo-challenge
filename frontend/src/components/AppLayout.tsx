@@ -1,13 +1,15 @@
 import { ClipboardList, LogOut } from "lucide-react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 
+import { logout } from "../services/auth";
 import { useAuthStore } from "../store/authStore";
 
 export function AppLayout() {
   const navigate = useNavigate();
   const { accessToken, clearSession } = useAuthStore();
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logout().catch(() => undefined);
     clearSession();
     navigate("/login");
   }

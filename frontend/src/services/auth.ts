@@ -1,8 +1,7 @@
 import { api } from "./api";
 
-export type AuthTokens = {
+export type AuthSession = {
   access: string;
-  refresh: string;
 };
 
 export type LoginPayload = {
@@ -14,17 +13,21 @@ export type RegisterPayload = LoginPayload & {
   username: string;
 };
 
-export async function login(payload: LoginPayload): Promise<AuthTokens> {
-  const response = await api.post<AuthTokens>("/auth/login/", payload);
+export async function login(payload: LoginPayload): Promise<AuthSession> {
+  const response = await api.post<AuthSession>("/auth/login/", payload);
   return response.data;
 }
 
-export async function register(payload: RegisterPayload): Promise<AuthTokens> {
-  const response = await api.post<{ tokens: AuthTokens }>("/auth/register/", payload);
-  return response.data.tokens;
+export async function register(payload: RegisterPayload): Promise<AuthSession> {
+  const response = await api.post<AuthSession>("/auth/register/", payload);
+  return response.data;
 }
 
-export async function refreshAccessToken(refresh: string): Promise<{ access: string }> {
-  const response = await api.post<{ access: string }>("/auth/token/refresh/", { refresh });
+export async function refreshAccessToken(): Promise<AuthSession> {
+  const response = await api.post<AuthSession>("/auth/token/refresh/");
   return response.data;
+}
+
+export async function logout(): Promise<void> {
+  await api.post("/auth/logout/");
 }

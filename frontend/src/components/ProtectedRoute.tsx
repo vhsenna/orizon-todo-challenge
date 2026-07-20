@@ -10,20 +10,19 @@ type ProtectedRouteProps = {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
-  const refreshToken = useAuthStore((state) => state.refreshToken);
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const clearSession = useAuthStore((state) => state.clearSession);
-  const [isRestoring, setIsRestoring] = useState(Boolean(refreshToken && !accessToken));
+  const [isRestoring, setIsRestoring] = useState(!accessToken);
 
   useEffect(() => {
-    if (accessToken || !refreshToken) {
+    if (accessToken) {
       setIsRestoring(false);
       return;
     }
 
     let isMounted = true;
 
-    refreshAccessToken(refreshToken)
+    refreshAccessToken()
       .then(({ access }) => {
         if (isMounted) {
           setAccessToken(access);
@@ -43,7 +42,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return () => {
       isMounted = false;
     };
-  }, [accessToken, clearSession, refreshToken, setAccessToken]);
+  }, [accessToken, clearSession, setAccessToken]);
 
   if (isRestoring) {
     return <p className="muted">Restoring session...</p>;
