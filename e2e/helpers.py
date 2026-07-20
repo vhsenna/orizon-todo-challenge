@@ -18,3 +18,11 @@ def register_user(browser, frontend_url):
     WebDriverWait(browser, 10).until(EC.url_contains("/tasks"))
 
     return {"email": email, "password": password}
+
+
+def login_user(browser, frontend_url, email, password):
+    browser.get(f"{frontend_url}/login")
+    browser.find_element(By.NAME, "email").send_keys(email)
+    browser.find_element(By.NAME, "password").send_keys(password)
+    browser.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+    WebDriverWait(browser, 10).until(EC.url_contains("/tasks"))
