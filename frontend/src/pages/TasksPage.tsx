@@ -145,6 +145,8 @@ export function TasksPage() {
 
   const tasks = tasksQuery.data?.results ?? [];
   const categories = categoriesQuery.data?.results ?? [];
+  const completedCount = tasks.filter((task) => task.status === "completed").length;
+  const openCount = Math.max((tasksQuery.data?.count ?? tasks.length) - completedCount, 0);
 
   return (
     <section className="dashboard">
@@ -153,7 +155,11 @@ export function TasksPage() {
           <h1>Tasks</h1>
           <p className="muted">Plan, organize, and share your work.</p>
         </div>
-        <span className="task-count">{tasksQuery.data?.count ?? 0} tasks</span>
+        <div className="task-summary">
+          <span>{tasksQuery.data?.count ?? 0} total</span>
+          <span>{openCount} open</span>
+          <span>{completedCount} completed</span>
+        </div>
       </div>
       <div className="workspace-grid">
         <aside className="side-panel">
