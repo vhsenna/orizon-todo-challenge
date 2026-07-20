@@ -26,6 +26,15 @@ React, PostgreSQL, Docker Compose, pytest, Selenium, and GitHub Actions.
 - E2E tests: Selenium
 - CI: GitHub Actions
 
+## Prerequisites
+
+- Docker and Docker Compose
+- Python 3.12
+- `uv`
+- Node.js 22
+- npm
+- Google Chrome for local Selenium tests
+
 ## Project Structure
 
 ```text
@@ -41,6 +50,28 @@ frontend/
 e2e/
 .github/workflows/
 ```
+
+## First Run With Docker
+
+The fastest way to run the full application is Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- PostgreSQL on `localhost:5432`
+- Django API on `localhost:8000`
+- Vite frontend on `localhost:5173`
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+The backend applies migrations automatically in the development override before starting the Django development server.
 
 ## Environment
 
@@ -73,6 +104,12 @@ Stop services:
 docker compose down
 ```
 
+Remove local Compose volumes if you intentionally want a fresh database:
+
+```bash
+docker compose down -v
+```
+
 ## Local Backend
 
 From `backend/`:
@@ -85,6 +122,14 @@ uv run python manage.py runserver
 
 The backend expects PostgreSQL. The easiest local database path is running the
 Compose `db` service.
+
+Useful commands:
+
+```bash
+uv run python manage.py check
+uv run python manage.py showmigrations
+uv run python manage.py createsuperuser
+```
 
 ## Local Frontend
 
@@ -158,6 +203,21 @@ Docker validation:
 ```bash
 docker compose config --quiet
 docker compose build
+```
+
+## CI
+
+GitHub Actions runs:
+
+- Backend Django checks and pytest
+- Frontend production build
+- Docker Compose config/build validation
+- Selenium e2e tests
+
+The CI workflow is defined in:
+
+```text
+.github/workflows/ci.yml
 ```
 
 ## Design Decisions
