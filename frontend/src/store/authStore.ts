@@ -4,6 +4,7 @@ type AuthState = {
   accessToken: string | null;
   refreshToken: string | null;
   setSession: (tokens: { access: string; refresh: string }) => void;
+  setAccessToken: (access: string) => void;
   clearSession: () => void;
 };
 
@@ -15,6 +16,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   setSession: (tokens) => {
     localStorage.setItem("orizon_refresh_token", tokens.refresh);
     set({ accessToken: tokens.access, refreshToken: tokens.refresh });
+  },
+  setAccessToken: (access) => {
+    set({ accessToken: access });
   },
   clearSession: () => {
     localStorage.removeItem("orizon_refresh_token");

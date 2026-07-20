@@ -23,3 +23,8 @@ export async function register(payload: RegisterPayload): Promise<AuthTokens> {
   const response = await api.post<{ tokens: AuthTokens }>("/auth/register/", payload);
   return response.data.tokens;
 }
+
+export async function refreshAccessToken(refresh: string): Promise<{ access: string }> {
+  const response = await api.post<{ access: string }>("/auth/token/refresh/", { refresh });
+  return response.data;
+}
