@@ -28,10 +28,21 @@ export type TaskPayload = {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  category: number | null;
 };
 
-export async function getTasks(): Promise<PaginatedResponse<Task>> {
-  const response = await api.get<PaginatedResponse<Task>>("/tasks/");
+export type TaskQuery = {
+  status?: string;
+  priority?: string;
+  category?: string;
+  search?: string;
+  ordering?: string;
+  page?: number;
+  page_size?: number;
+};
+
+export async function getTasks(params: TaskQuery = {}): Promise<PaginatedResponse<Task>> {
+  const response = await api.get<PaginatedResponse<Task>>("/tasks/", { params });
   return response.data;
 }
 

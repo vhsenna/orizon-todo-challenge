@@ -175,7 +175,7 @@ a {
 .task-form,
 .task-edit-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(220px, 1.8fr) 150px 130px auto;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(180px, 1.6fr) 140px 120px 150px auto;
   gap: 12px;
   align-items: start;
 }
@@ -191,6 +191,86 @@ a {
 .task-list {
   display: grid;
   gap: 12px;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.side-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  border: 1px solid #e0e4ee;
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.side-panel h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.category-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 42px;
+  gap: 8px;
+}
+
+.category-form input[type="color"] {
+  padding: 4px;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #f1f5f9;
+  color: #3d475c;
+  font-size: 13px;
+}
+
+.category-chip span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.task-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.filters-bar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(120px, auto));
+  gap: 10px;
+}
+
+.search-field {
+  position: relative;
+}
+
+.search-field svg {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: #64708a;
+}
+
+.search-field input {
+  padding-left: 38px;
 }
 
 .task-item {
@@ -242,6 +322,22 @@ a {
   gap: 8px;
 }
 
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pagination-bar button {
+  color: #25324a;
+  background: #eef2ff;
+}
+
+.pagination-bar select {
+  width: auto;
+}
+
 @media (max-width: 640px) {
   .topbar {
     padding: 0 16px;
@@ -258,7 +354,9 @@ a {
 
   .task-form,
   .task-edit-grid,
-  .task-item {
+  .task-item,
+  .workspace-grid,
+  .filters-bar {
     grid-template-columns: 1fr;
   }
 

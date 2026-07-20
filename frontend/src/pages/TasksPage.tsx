@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -13,6 +13,7 @@ import {
   toggleTask,
   updateTask,
 } from "../services/tasks";
+import { createCategory, getCategories } from "../services/categories";
 import { getApiErrorMessage } from "../utils/errors";
 
 const emptyForm: TaskPayload = {
@@ -20,6 +21,17 @@ const emptyForm: TaskPayload = {
   description: "",
   status: "pending",
   priority: "medium",
+  category: null,
+};
+
+const defaultFilters = {
+  status: "",
+  priority: "",
+  category: "",
+  search: "",
+  ordering: "-created_at",
+  page: 1,
+  page_size: 10,
 };
 
 export function TasksPage() {
@@ -27,15 +39,25 @@ export function TasksPage() {
   const [form, setForm] = useState<TaskPayload>(emptyForm);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingForm, setEditingForm] = useState<TaskPayload>(emptyForm);
+  const [categoryForm, setCategoryForm] = useState({ name: "", color: "#2563eb" });
+  const [filters, setFilters] = useState(defaultFilters);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const tasksQuery = useQuery({
-    queryKey: ["tasks"],
-    queryFn: getTasks,
+    queryKey: ["tasks", filters],
+    queryFn: () => getTasks(filters),
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
   });
 
   const invalidateTasks = () => {
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  };
+  const invalidateCategories = () => {
+    void queryClient.invalidateQueries({ queryKey: ["categories"] });
   };
 
   const createMutation = useMutation({
@@ -71,9 +93,24 @@ export function TasksPage() {
     onError: (error) => setErrorMessage(getApiErrorMessage(error)),
   });
 
+  const createCategoryMutation = useMutation({
+    mutationFn: createCategory,
+    onSuccess: () => {
+      setCategoryForm({ name: "", color: "#2563eb" });
+      setErrorMessage(null);
+      invalidateCategories();
+    },
+    onError: (error) => setErrorMessage(getApiErrorMessage(error)),
+  });
+
   function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     createMutation.mutate(form);
+  }
+
+  function handleCreateCategory(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    createCategoryMutation.mutate(categoryForm);
   }
 
   function startEdit(task: Task) {
@@ -83,10 +120,12 @@ export function TasksPage() {
       description: task.description,
       status: task.status,
       priority: task.priority,
+      category: task.category,
     });
   }
 
   const tasks = tasksQuery.data?.results ?? [];
+  const categories = categoriesQuery.data?.results ?? [];
 
   return (
     <section className="dashboard">
@@ -94,7 +133,75 @@ export function TasksPage() {
         <h1>Tasks</h1>
         <p className="muted">{tasksQuery.data?.count ?? 0} tasks</p>
       </div>
-      <form className="task-form" onSubmit={handleCreate}>
+      <div className="workspace-grid">
+        <aside className="side-panel">
+          <h2>Categories</h2>
+          <form className="category-form" onSubmit={handleCreateCategory}>
+            <input
+              aria-label="Category name"
+              placeholder="Category name"
+              value={categoryForm.name}
+              onChange={(event) => setCategoryForm({ ...categoryForm, name: event.target.value })}
+              required
+            />
+            <input
+              aria-label="Category color"
+              type="color"
+              value={categoryForm.color}
+              onChange={(event) => setCategoryForm({ ...categoryForm, color: event.target.value })}
+            />
+            <button type="submit" disabled={createCategoryMutation.isPending}>
+              <Plus size={18} aria-hidden="true" />
+            </button>
+          </form>
+          <div className="category-list">
+            {categories.map((category) => (
+              <span className="category-chip" key={category.id}>
+                <span style={{ background: category.color }} />
+                {category.name}
+              </span>
+            ))}
+          </div>
+        </aside>
+
+        <div className="task-workspace">
+          <div className="filters-bar">
+            <label className="search-field">
+              <Search size={18} aria-hidden="true" />
+              <input
+                aria-label="Search tasks"
+                placeholder="Search tasks"
+                value={filters.search}
+                onChange={(event) => setFilters({ ...filters, search: event.target.value, page: 1 })}
+              />
+            </label>
+            <select aria-label="Filter by status" value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value, page: 1 })}>
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select aria-label="Filter by priority" value={filters.priority} onChange={(event) => setFilters({ ...filters, priority: event.target.value, page: 1 })}>
+              <option value="">All priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <select aria-label="Filter by category" value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value, page: 1 })}>
+              <option value="">All categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+            <select aria-label="Order tasks" value={filters.ordering} onChange={(event) => setFilters({ ...filters, ordering: event.target.value, page: 1 })}>
+              <option value="-created_at">Newest</option>
+              <option value="created_at">Oldest</option>
+              <option value="due_date">Due date</option>
+              <option value="priority">Priority</option>
+            </select>
+          </div>
+
+          <form className="task-form" onSubmit={handleCreate}>
         <input
           aria-label="Task title"
           placeholder="Task title"
@@ -125,6 +232,21 @@ export function TasksPage() {
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
+        </select>
+        <select
+          aria-label="Task category"
+          value={form.category ?? ""}
+          onChange={(event) =>
+            setForm({
+              ...form,
+              category: event.target.value ? Number(event.target.value) : null,
+            })
+          }
+        >
+          <option value="">No category</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>{category.name}</option>
+          ))}
         </select>
         <button type="submit" disabled={createMutation.isPending}>
           <Plus size={18} aria-hidden="true" />
@@ -185,6 +307,21 @@ export function TasksPage() {
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                   </select>
+                  <select
+                    aria-label="Edit task category"
+                    value={editingForm.category ?? ""}
+                    onChange={(event) =>
+                      setEditingForm({
+                        ...editingForm,
+                        category: event.target.value ? Number(event.target.value) : null,
+                      })
+                    }
+                  >
+                    <option value="">No category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                  </select>
                 </div>
               ) : (
                 <div>
@@ -195,6 +332,9 @@ export function TasksPage() {
                   <div className="task-meta">
                     <span>{task.status.replace("_", " ")}</span>
                     <span>{task.priority}</span>
+                    {task.category ? (
+                      <span>{categories.find((category) => category.id === task.category)?.name ?? "Category"}</span>
+                    ) : null}
                   </div>
                 </div>
               )}
@@ -254,6 +394,22 @@ export function TasksPage() {
             </article>
           );
         })}
+      </div>
+      <div className="pagination-bar">
+        <button type="button" disabled={!tasksQuery.data?.previous} onClick={() => setFilters({ ...filters, page: Math.max(1, filters.page - 1) })}>
+          Previous
+        </button>
+        <span>Page {filters.page}</span>
+        <button type="button" disabled={!tasksQuery.data?.next} onClick={() => setFilters({ ...filters, page: filters.page + 1 })}>
+          Next
+        </button>
+        <select aria-label="Page size" value={filters.page_size} onChange={(event) => setFilters({ ...filters, page_size: Number(event.target.value), page: 1 })}>
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+        </select>
+      </div>
+        </div>
       </div>
     </section>
   );
