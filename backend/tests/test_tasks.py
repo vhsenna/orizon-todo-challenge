@@ -30,6 +30,8 @@ def test_user_can_create_task(api_client, user):
 
     assert response.status_code == 201
     assert response.json()["title"] == "Ship API"
+    assert response.json()["owner"] == user.id
+    assert response.json()["is_owner"] is True
     assert Task.objects.get(id=response.json()["id"]).owner == user
 
 
@@ -69,6 +71,31 @@ def test_user_can_update_shared_task(api_client, user, other_user):
     assert response.status_code == 200
     task.refresh_from_db()
     assert task.title == "Updated"
+
+
+@pytest.mark.django_db
+def test_shared_user_category_payload_is_validated_against_task_owner(api_client, user, other_user):
+    owner_category = Category.objects.create(owner=other_user, name="Owner category", color="#2563eb")
+    shared_user_category = Category.objects.create(owner=user, name="Shared category", color="#16a34a")
+    task = Task.objects.create(owner=other_user, title="Shared")
+    task.shared_with.add(user)
+    api_client.force_authenticate(user=user)
+
+    valid_response = api_client.patch(
+        reverse("task-detail", args=[task.id]),
+        {"category": owner_category.id},
+        format="json",
+    )
+    invalid_response = api_client.patch(
+        reverse("task-detail", args=[task.id]),
+        {"category": shared_user_category.id},
+        format="json",
+    )
+
+    assert valid_response.status_code == 200
+    assert valid_response.json()["is_owner"] is False
+    assert invalid_response.status_code == 400
+    assert "category" in invalid_response.json()
 
 
 @pytest.mark.django_db

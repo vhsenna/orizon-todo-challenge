@@ -28,6 +28,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.none()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsTaskOwnerForDelete]
+    throttle_scope = None
     filterset_class = TaskFilter
     search_fields = ("title", "description")
     ordering_fields = ("due_date", "created_at", "priority")
@@ -58,7 +59,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.save(update_fields=["status", "updated_at"])
         return Response(self.get_serializer(task).data)
 
-    @action(detail=True, methods=["post"])
+    @action(detail=True, methods=["post"], throttle_scope="task_share")
     def share(self, request, pk=None):
         task = self.get_object()
         if task.owner_id != request.user.id:

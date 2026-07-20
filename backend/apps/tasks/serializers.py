@@ -26,7 +26,7 @@ class CategorySerializer(serializers.ModelSerializer):
         if name is None:
             return attrs
 
-        queryset = Category.objects.filter(owner=owner, name=name)
+        queryset = Category.objects.filter(owner=owner, name__iexact=name)
         if self.instance is not None:
             queryset = queryset.exclude(pk=self.instance.pk)
 
@@ -40,6 +40,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     shared_with = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -50,12 +51,14 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
+            "owner",
+            "is_owner",
             "category",
             "shared_with",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "shared_with", "created_at", "updated_at")
+        read_only_fields = ("id", "owner", "is_owner", "shared_with", "created_at", "updated_at")
 
     def validate_title(self, value):
         title = value.strip()
@@ -65,9 +68,14 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def validate_category(self, category):
         request = self.context["request"]
-        if category is not None and category.owner_id != request.user.id:
+        owner_id = self.instance.owner_id if self.instance is not None else request.user.id
+        if category is not None and category.owner_id != owner_id:
             raise serializers.ValidationError("Category must belong to the task owner.")
         return category
+
+    def get_is_owner(self, task) -> bool:
+        request = self.context.get("request")
+        return bool(request and task.owner_id == request.user.id)
 
 
 class TaskShareSerializer(serializers.Serializer):

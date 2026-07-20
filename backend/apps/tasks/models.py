@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models.functions import Lower
 
 
 hex_color_validator = RegexValidator(
@@ -27,9 +28,13 @@ class Category(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=("owner", "name"),
-                name="unique_category_name_per_owner",
+                "owner",
+                Lower("name"),
+                name="unique_category_name_ci_per_owner",
             ),
+        ]
+        indexes = [
+            models.Index(fields=("owner", "name"), name="category_owner_name_idx"),
         ]
         ordering = ("name",)
         verbose_name_plural = "categories"
@@ -83,6 +88,12 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        indexes = [
+            models.Index(fields=("owner", "-created_at"), name="task_owner_created_idx"),
+            models.Index(fields=("owner", "status"), name="task_owner_status_idx"),
+            models.Index(fields=("owner", "priority"), name="task_owner_priority_idx"),
+            models.Index(fields=("owner", "due_date"), name="task_owner_due_idx"),
+        ]
         ordering = ("-created_at",)
 
     def __str__(self) -> str:

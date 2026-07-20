@@ -50,6 +50,21 @@ def test_user_can_create_category(api_client, user):
 
 
 @pytest.mark.django_db
+def test_category_name_is_unique_case_insensitively_per_owner(api_client, user):
+    Category.objects.create(owner=user, name="Work", color="#2563eb")
+    api_client.force_authenticate(user=user)
+
+    response = api_client.post(
+        reverse("category-list"),
+        {"name": "work", "color": "#16a34a"},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "name" in response.json()
+
+
+@pytest.mark.django_db
 def test_category_color_must_be_hex(api_client, user):
     api_client.force_authenticate(user=user)
 
