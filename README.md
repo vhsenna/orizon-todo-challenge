@@ -6,7 +6,7 @@ React, PostgreSQL, Docker Compose, pytest, Selenium, and GitHub Actions.
 ## Features
 
 - User registration and JWT login
-- Session restore through refresh tokens
+- Session restore through HttpOnly refresh-token cookies
 - Category CRUD
 - Task CRUD
 - Task completion toggle
@@ -59,7 +59,7 @@ The fastest way to run the full application is Docker Compose:
 docker compose up --build
 ```
 
-This starts:
+With the development override, this starts:
 
 - PostgreSQL on `localhost:5432`
 - Django API on `localhost:8000`
@@ -73,16 +73,32 @@ http://localhost:5173
 
 The backend applies migrations automatically in the development override before starting the Django development server.
 
-## Environment
-
-Copy the example environment if you want local overrides:
+If your machine already has PostgreSQL on port 5432, move only the host binding
+and keep the internal container port unchanged:
 
 ```bash
-cp .env.example .env
+POSTGRES_HOST_PORT=55432 docker compose up --build
 ```
+
+## Environment
+
+Use the example environment files as references for local overrides:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+For local backend runs, export the variables from `backend/.env.example` or pass
+them through your shell. Vite reads `frontend/.env`; Django does not load
+`backend/.env` automatically.
 
 Docker Compose also works without `.env` because defaults are defined in
 `docker-compose.yml`.
+
+For production settings, provide a non-placeholder `DJANGO_SECRET_KEY`, trusted
+`DJANGO_ALLOWED_HOSTS`, trusted `DJANGO_CORS_ALLOWED_ORIGINS`, and HTTPS. The
+production settings enable secure cookies, HSTS, SSL redirects, and proxy SSL
+detection.
 
 ## Docker Development
 
@@ -123,10 +139,25 @@ uv run python manage.py runserver
 The backend expects PostgreSQL. The easiest local database path is running the
 Compose `db` service.
 
+If you run pytest outside Compose, create a matching local PostgreSQL role and
+database or override `POSTGRES_*`:
+
+```bash
+createuser orizon
+createdb -O orizon orizon_todo
+```
+
 Useful commands:
 
 ```bash
+uv run ruff check .
 uv run python manage.py check
+DJANGO_SETTINGS_MODULE=config.settings.production \
+DJANGO_SECRET_KEY=local-production-check-secret-0123456789abcdef0123456789abcdef \
+DJANGO_ALLOWED_HOSTS=example.com \
+DJANGO_CORS_ALLOWED_ORIGINS=https://example.com \
+uv run python manage.py check --deploy
+uv run python manage.py spectacular --validate --file /tmp/orizon-schema.yml
 uv run python manage.py showmigrations
 uv run python manage.py createsuperuser
 ```
@@ -143,6 +174,8 @@ npm run dev
 Build:
 
 ```bash
+npm run typecheck
+npm test
 npm run build
 ```
 
@@ -159,6 +192,7 @@ Main endpoints:
 - `POST /api/auth/register/`
 - `POST /api/auth/login/`
 - `POST /api/auth/token/refresh/`
+- `POST /api/auth/logout/`
 - `GET /api/auth/me/`
 - `/api/categories/`
 - `/api/tasks/`
@@ -181,6 +215,7 @@ Backend tests:
 
 ```bash
 cd backend
+uv run ruff check .
 uv run pytest -q
 ```
 
@@ -195,6 +230,8 @@ Frontend build check:
 
 ```bash
 cd frontend
+npm run typecheck
+npm test
 npm run build
 ```
 
@@ -209,8 +246,8 @@ docker compose build
 
 GitHub Actions runs:
 
-- Backend Django checks and pytest
-- Frontend production build
+- Backend ruff, Django checks, pytest, deployment checks, and schema validation
+- Frontend typecheck, tests, and production build
 - Docker Compose config/build validation
 - Selenium e2e tests
 
@@ -224,8 +261,13 @@ The CI workflow is defined in:
 
 - A custom user model is used from the first migration so auth can evolve safely.
 - Email is the login field.
-- Access tokens are stored in memory; refresh tokens are stored in local storage.
+- Access tokens are stored in memory; refresh tokens are stored in HttpOnly cookies.
+- Auth endpoints return access tokens only, while register/login/refresh rotate the
+  cookie-backed refresh token.
 - API permissions restrict users to their own categories and owned/shared tasks.
 - Shared users can view and edit shared tasks, but only owners can delete tasks.
+- The API returns task `owner` and `is_owner` metadata so shared users do not see
+  owner-only frontend actions.
+- Categories are unique per owner case-insensitively.
 - PostgreSQL is used for development and CI to avoid SQLite-only behavior.
 - E2E tests run against real browser flows through Selenium.
