@@ -23,3 +23,12 @@ export async function createCategory(payload: CategoryPayload): Promise<Category
   const response = await api.post<Category>("/categories/", payload);
   return response.data;
 }
+
+export async function updateCategory(id: number, payload: CategoryPayload): Promise<Category> {
+  const response = await api.patch<Category>(`/categories/${id}/`, payload);
+  return response.data;
+}
+
+export async function deleteCategory(id: number): Promise<void> {
+  await api.delete(`/categories/${id}/`);
+}

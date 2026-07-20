@@ -10,6 +10,8 @@ export type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
+  owner: number;
+  is_owner: boolean;
   category: number | null;
   shared_with: number[];
   created_at: string;
@@ -28,6 +30,7 @@ export type TaskPayload = {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  due_date: string | null;
   category: number | null;
 };
 
