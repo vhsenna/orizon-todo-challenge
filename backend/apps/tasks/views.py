@@ -11,10 +11,13 @@ from .serializers import CategorySerializer, TaskSerializer, TaskShareSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.none()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated, IsCategoryOwner]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset
         return Category.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
@@ -22,6 +25,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.none()
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated, IsTaskOwnerForDelete]
     filterset_class = TaskFilter
@@ -30,6 +34,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     ordering = ("-created_at",)
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset
         user = self.request.user
         return (
             Task.objects.filter(Q(owner=user) | Q(shared_with=user))
