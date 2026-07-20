@@ -35,6 +35,9 @@ pnpm-debug.log*
 dist/
 build/
 coverage/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 
 # IDEs and editors
 .idea/
