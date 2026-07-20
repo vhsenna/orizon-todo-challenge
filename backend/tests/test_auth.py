@@ -1,4 +1,5 @@
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
@@ -17,7 +18,7 @@ def user(db):
 
 
 @pytest.mark.django_db
-def test_register_creates_user_and_returns_tokens(api_client):
+def test_register_creates_user_and_sets_refresh_cookie(api_client):
     response = api_client.post(
         reverse("register"),
         {
@@ -32,11 +33,14 @@ def test_register_creates_user_and_returns_tokens(api_client):
 
     assert response.status_code == 201
     body = response.json()
-    assert body["email"] == "maria@example.com"
-    assert body["username"] == "maria"
+    assert body["access"]
+    assert "refresh" not in body
     assert "password" not in body
-    assert body["tokens"]["access"]
-    assert body["tokens"]["refresh"]
+    assert settings.REFRESH_TOKEN_COOKIE_NAME in response.cookies
+    refresh_cookie = response.cookies[settings.REFRESH_TOKEN_COOKIE_NAME]
+    assert refresh_cookie["httponly"]
+    assert refresh_cookie["path"] == settings.REFRESH_TOKEN_COOKIE_PATH
+    assert "password" not in body
     assert User.objects.filter(email="maria@example.com").exists()
 
 
@@ -57,7 +61,7 @@ def test_register_rejects_duplicate_email(api_client, user):
 
 
 @pytest.mark.django_db
-def test_login_returns_jwt_tokens(api_client, user):
+def test_login_returns_access_and_sets_refresh_cookie(api_client, user):
     response = api_client.post(
         reverse("token-obtain-pair"),
         {
@@ -70,11 +74,12 @@ def test_login_returns_jwt_tokens(api_client, user):
     assert response.status_code == 200
     body = response.json()
     assert body["access"]
-    assert body["refresh"]
+    assert "refresh" not in body
+    assert settings.REFRESH_TOKEN_COOKIE_NAME in response.cookies
 
 
 @pytest.mark.django_db
-def test_refresh_returns_new_access_token(api_client, user):
+def test_refresh_uses_cookie_and_rotates_refresh_cookie(api_client, user):
     login_response = api_client.post(
         reverse("token-obtain-pair"),
         {
@@ -83,16 +88,54 @@ def test_refresh_returns_new_access_token(api_client, user):
         },
         format="json",
     )
-    refresh = login_response.json()["refresh"]
+    original_refresh = login_response.cookies[settings.REFRESH_TOKEN_COOKIE_NAME].value
+    api_client.cookies[settings.REFRESH_TOKEN_COOKIE_NAME] = original_refresh
 
     response = api_client.post(
         reverse("token-refresh"),
-        {"refresh": refresh},
         format="json",
     )
 
     assert response.status_code == 200
-    assert response.json()["access"]
+    body = response.json()
+    assert body["access"]
+    assert "refresh" not in body
+    assert response.cookies[settings.REFRESH_TOKEN_COOKIE_NAME].value != original_refresh
+
+
+def test_refresh_rejects_missing_cookie(api_client):
+    response = api_client.post(reverse("token-refresh"), format="json")
+
+    assert response.status_code == 401
+
+
+def test_auth_throttle_rates_are_configured():
+    rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+
+    assert rates["login"]
+    assert rates["register"]
+    assert rates["token_refresh"]
+
+
+@pytest.mark.django_db
+def test_logout_clears_refresh_cookie(api_client, user):
+    login_response = api_client.post(
+        reverse("token-obtain-pair"),
+        {
+            "email": user.email,
+            "password": "secure-pass-123",
+        },
+        format="json",
+    )
+    api_client.cookies[settings.REFRESH_TOKEN_COOKIE_NAME] = login_response.cookies[
+        settings.REFRESH_TOKEN_COOKIE_NAME
+    ].value
+    api_client.force_authenticate(user=user)
+
+    response = api_client.post(reverse("logout"), format="json")
+
+    assert response.status_code == 204
+    assert response.cookies[settings.REFRESH_TOKEN_COOKIE_NAME].value == ""
 
 
 @pytest.mark.django_db

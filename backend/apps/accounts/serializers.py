@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
@@ -16,7 +14,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
-    tokens = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -27,9 +24,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "password",
-            "tokens",
         )
-        read_only_fields = ("id", "tokens")
+        read_only_fields = ("id",)
 
     def validate_email(self, value):
         email = value.lower()
@@ -47,19 +43,3 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save(update_fields=["password"])
         return user
-
-    @extend_schema_field(
-        {
-            "type": "object",
-            "properties": {
-                "refresh": {"type": "string"},
-                "access": {"type": "string"},
-            },
-        }
-    )
-    def get_tokens(self, user):
-        refresh = RefreshToken.for_user(user)
-        return {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        }
