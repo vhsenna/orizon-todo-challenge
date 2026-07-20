@@ -33,6 +33,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 input {
   width: 100%;
   min-height: 42px;
@@ -109,6 +114,16 @@ a {
   color: #3d475c;
   font-size: 14px;
   font-weight: 600;
+}
+
+.form-error {
+  margin: 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 14px;
 }
 
 .dashboard {
