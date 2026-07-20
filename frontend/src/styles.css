@@ -101,6 +101,14 @@ a {
   place-items: center;
 }
 
+.text-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 88px;
+  justify-content: center;
+}
+
 .subtle {
   color: #25324a;
   background: #eef2ff;
@@ -284,6 +292,22 @@ a {
   background: #ffffff;
 }
 
+.share-form {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 260px) 42px 42px;
+  gap: 8px;
+  grid-column: 1 / -1;
+  align-items: center;
+  border-top: 1px solid #e0e4ee;
+  padding-top: 12px;
+}
+
+.share-label {
+  color: #3d475c;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .task-title {
   margin: 0;
   color: #172033;
@@ -355,6 +379,7 @@ a {
   .task-form,
   .task-edit-grid,
   .task-item,
+  .share-form,
   .workspace-grid,
   .filters-bar {
     grid-template-columns: 1fr;

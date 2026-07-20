@@ -64,3 +64,8 @@ export async function toggleTask(id: number): Promise<Task> {
   const response = await api.patch<Task>(`/tasks/${id}/toggle/`);
   return response.data;
 }
+
+export async function shareTask(id: number, email: string): Promise<Task> {
+  const response = await api.post<Task>(`/tasks/${id}/share/`, { email });
+  return response.data;
+}

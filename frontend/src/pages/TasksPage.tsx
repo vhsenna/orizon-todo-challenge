@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Pencil, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Save, Search, Share2, Trash2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -10,6 +10,7 @@ import {
   TaskPayload,
   TaskPriority,
   TaskStatus,
+  shareTask,
   toggleTask,
   updateTask,
 } from "../services/tasks";
@@ -39,6 +40,8 @@ export function TasksPage() {
   const [form, setForm] = useState<TaskPayload>(emptyForm);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingForm, setEditingForm] = useState<TaskPayload>(emptyForm);
+  const [sharingTaskId, setSharingTaskId] = useState<number | null>(null);
+  const [shareEmail, setShareEmail] = useState("");
   const [categoryForm, setCategoryForm] = useState({ name: "", color: "#2563eb" });
   const [filters, setFilters] = useState(defaultFilters);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -93,6 +96,17 @@ export function TasksPage() {
     onError: (error) => setErrorMessage(getApiErrorMessage(error)),
   });
 
+  const shareMutation = useMutation({
+    mutationFn: ({ id, email }: { id: number; email: string }) => shareTask(id, email),
+    onSuccess: () => {
+      setSharingTaskId(null);
+      setShareEmail("");
+      setErrorMessage(null);
+      invalidateTasks();
+    },
+    onError: (error) => setErrorMessage(getApiErrorMessage(error)),
+  });
+
   const createCategoryMutation = useMutation({
     mutationFn: createCategory,
     onSuccess: () => {
@@ -122,6 +136,11 @@ export function TasksPage() {
       priority: task.priority,
       category: task.category,
     });
+  }
+
+  function handleShare(event: React.FormEvent<HTMLFormElement>, taskId: number) {
+    event.preventDefault();
+    shareMutation.mutate({ id: taskId, email: shareEmail });
   }
 
   const tasks = tasksQuery.data?.results ?? [];
@@ -335,9 +354,30 @@ export function TasksPage() {
                     {task.category ? (
                       <span>{categories.find((category) => category.id === task.category)?.name ?? "Category"}</span>
                     ) : null}
+                    {task.shared_with.length ? <span>Shared with {task.shared_with.length}</span> : null}
                   </div>
                 </div>
               )}
+
+              {sharingTaskId === task.id ? (
+                <form className="share-form" onSubmit={(event) => handleShare(event, task.id)}>
+                  <span className="share-label">Share by email</span>
+                  <input
+                    aria-label="Share with email"
+                    type="email"
+                    placeholder="teammate@example.com"
+                    value={shareEmail}
+                    onChange={(event) => setShareEmail(event.target.value)}
+                    required
+                  />
+                  <button className="icon-button subtle" type="submit" aria-label="Share task" title="Share task">
+                    <Share2 size={18} aria-hidden="true" />
+                  </button>
+                  <button className="icon-button subtle" type="button" onClick={() => setSharingTaskId(null)} aria-label="Cancel sharing" title="Cancel sharing">
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                </form>
+              ) : null}
 
               <div className="task-actions">
                 <button
@@ -371,15 +411,30 @@ export function TasksPage() {
                     </button>
                   </>
                 ) : (
-                  <button
-                    className="icon-button subtle"
-                    type="button"
-                    onClick={() => startEdit(task)}
-                    aria-label="Edit task"
-                    title="Edit task"
-                  >
-                    <Pencil size={18} aria-hidden="true" />
-                  </button>
+                  <>
+                    <button
+                      className="icon-button subtle"
+                      type="button"
+                      onClick={() => startEdit(task)}
+                      aria-label="Edit task"
+                      title="Edit task"
+                    >
+                      <Pencil size={18} aria-hidden="true" />
+                    </button>
+                    <button
+                      className="text-icon-button subtle"
+                      type="button"
+                      onClick={() => {
+                        setSharingTaskId(task.id);
+                        setShareEmail("");
+                      }}
+                      aria-label="Share task"
+                      title="Share task"
+                    >
+                      <Share2 size={18} aria-hidden="true" />
+                      Share
+                    </button>
+                  </>
                 )}
                 <button
                   className="icon-button danger"
