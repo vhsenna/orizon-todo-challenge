@@ -149,8 +149,11 @@ export function TasksPage() {
   return (
     <section className="dashboard">
       <div className="dashboard-header">
-        <h1>Tasks</h1>
-        <p className="muted">{tasksQuery.data?.count ?? 0} tasks</p>
+        <div>
+          <h1>Tasks</h1>
+          <p className="muted">Plan, organize, and share your work.</p>
+        </div>
+        <span className="task-count">{tasksQuery.data?.count ?? 0} tasks</span>
       </div>
       <div className="workspace-grid">
         <aside className="side-panel">
@@ -220,7 +223,10 @@ export function TasksPage() {
             </select>
           </div>
 
-          <form className="task-form" onSubmit={handleCreate}>
+          <form className="task-form create-panel" onSubmit={handleCreate}>
+        <div className="panel-heading">
+          <h2>New task</h2>
+        </div>
         <input
           aria-label="Task title"
           placeholder="Task title"
@@ -277,6 +283,12 @@ export function TasksPage() {
       {tasksQuery.isLoading ? <p className="muted">Loading tasks...</p> : null}
 
       <div className="task-list">
+        {!tasksQuery.isLoading && tasks.length === 0 ? (
+          <div className="empty-state">
+            <h2>No tasks found</h2>
+            <p className="muted">Create a task or adjust your filters.</p>
+          </div>
+        ) : null}
         {tasks.map((task) => {
           const isEditing = editingTaskId === task.id;
 
@@ -422,7 +434,7 @@ export function TasksPage() {
                       <Pencil size={18} aria-hidden="true" />
                     </button>
                     <button
-                      className="text-icon-button subtle"
+                      className="icon-button subtle"
                       type="button"
                       onClick={() => {
                         setSharingTaskId(task.id);
@@ -432,7 +444,6 @@ export function TasksPage() {
                       title="Share task"
                     >
                       <Share2 size={18} aria-hidden="true" />
-                      Share
                     </button>
                   </>
                 )}
