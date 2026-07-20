@@ -13,6 +13,10 @@ COPY . .
 
 RUN if [ -f pyproject.toml ]; then uv sync; fi
 
+RUN adduser --disabled-password --gecos "" appuser && chown -R appuser:appuser /app /opt/venv
+
+USER appuser
+
 EXPOSE 8000
 
-CMD ["sh", "-c", "if [ -f manage.py ]; then uv run python manage.py runserver 0.0.0.0:8000; else echo 'Backend project is not bootstrapped yet.' && sleep infinity; fi"]
+CMD ["sh", "-c", "if [ -f manage.py ]; then uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000; else echo 'Backend project is not bootstrapped yet.' && sleep infinity; fi"]
